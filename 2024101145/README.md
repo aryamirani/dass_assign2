@@ -1,0 +1,1 @@
+# Assignment 2\n\n- Whitebox Testing: Run `pytest whitebox/tests` from the root directory.\n- Code is located in `whitebox/code` and `integration/code` respectively.\n- Blackbox Tests: Run `pytest blackbox/tests`.\n\nGit Repo: https://github.com/aryamirani/dass_assign2
