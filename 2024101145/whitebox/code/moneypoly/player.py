@@ -47,11 +47,13 @@ class Player:
         Awards the Go salary if the player passes or lands on Go.
         Returns the new board position.
         """
+        old_position = self.position
         self.position = (self.position + steps) % BOARD_SIZE
 
-        if self.position == 0:
+        # Check if we passed or landed on GO (wrapped around)
+        if steps > 0 and self.position < old_position:
             self.add_money(GO_SALARY)
-            print(f"  {self.name} landed on Go and collected ${GO_SALARY}.")
+            print(f"  {self.name} passed Go and collected ${GO_SALARY}.")
 
         return self.position
 
@@ -66,11 +68,14 @@ class Player:
         """Add a property tile to this player's holdings."""
         if prop not in self.properties:
             self.properties.append(prop)
+            prop.owner = self
 
     def remove_property(self, prop):
         """Remove a property tile from this player's holdings."""
         if prop in self.properties:
             self.properties.remove(prop)
+            if prop.owner == self:
+                prop.owner = None
 
     def count_properties(self):
         """Return the number of properties this player currently owns."""
