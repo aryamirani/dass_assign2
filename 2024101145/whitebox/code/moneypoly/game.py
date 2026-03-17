@@ -163,6 +163,7 @@ class Game:
 
         rent = prop.get_rent()
         player.deduct_money(rent)
+        prop.owner.add_money(rent)
         print(f"  {player.name} paid ${rent} rent on {prop.name} to {prop.owner.name}.")
 
     def mortgage_property(self, player, prop):
@@ -175,7 +176,7 @@ class Game:
             print(f"  {prop.name} is already mortgaged.")
             return False
         player.add_money(payout)
-        self.bank.collect(-payout)
+        self.bank.pay_out(payout)
         print(f"  {player.name} mortgaged {prop.name} and received ${payout}.")
         return True
 
@@ -210,6 +211,7 @@ class Game:
             return False
 
         buyer.deduct_money(cash_amount)
+        seller.add_money(cash_amount)
         prop.owner = buyer
         seller.remove_property(prop)
         buyer.add_property(prop)
@@ -285,16 +287,24 @@ class Game:
         # No action
         # Serve the turn
         player.jail_turns += 1
-        if player.jail_turns >= 3:
+        roll = self.dice.roll()
+        print(f"  {player.name} rolled: {self.dice.describe()}")
+
+        if self.dice.is_doubles():
+            print(f"  Doubles! {player.name} breaks out of jail!")
+            player.in_jail = False
+            player.jail_turns = 0
+            self._move_and_resolve(player, roll)
+        elif player.jail_turns >= 3:
             # Mandatory release after 3 turns
             print(f"  {player.name} must leave jail. Paying mandatory ${JAIL_FINE} fine.")
             player.deduct_money(JAIL_FINE)
             self.bank.collect(JAIL_FINE)
             player.in_jail = False
             player.jail_turns = 0
-            roll = self.dice.roll()
-            print(f"  {player.name} rolled: {self.dice.describe()}")
             self._move_and_resolve(player, roll)
+        else:
+            print(f"  {player.name} remains in jail.")
 
     def _apply_card(self, player, card):
         """Apply the effect of a drawn Chance or Community Chest card."""
