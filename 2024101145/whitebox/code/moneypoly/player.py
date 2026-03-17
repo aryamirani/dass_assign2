@@ -7,9 +7,8 @@ from moneypoly.config import STARTING_BALANCE, BOARD_SIZE, GO_SALARY, JAIL_POSIT
 class Player:
     """
     Represents a single player in a MoneyPoly game.
-    
-    # pylint: disable=too-many-instance-attributes
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, name, balance=STARTING_BALANCE):
         self.name = name

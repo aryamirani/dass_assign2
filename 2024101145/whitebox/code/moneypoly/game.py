@@ -21,9 +21,8 @@ from moneypoly import ui
 class Game:
     """
     Manages the full state and flow of a MoneyPoly game session.
-    
-    # pylint: disable=too-many-instance-attributes,too-many-branches
     """
+    # pylint: disable=too-many-instance-attributes,too-many-branches
 
     def __init__(self, player_names):
         self.board = Board()
