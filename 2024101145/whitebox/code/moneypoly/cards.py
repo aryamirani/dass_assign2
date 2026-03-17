@@ -1,3 +1,7 @@
+"""
+Definitions and deck management for Chance and Community Chest cards.
+# pylint: disable=line-too-long
+"""
 import random
 
 CHANCE_CARDS = [
