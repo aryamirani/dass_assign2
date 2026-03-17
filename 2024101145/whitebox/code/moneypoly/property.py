@@ -1,5 +1,13 @@
+"""
+Module for defining properties and property groups in the MoneyPoly game.
+"""
+
 class Property:
-    """Represents a single purchasable property tile on the MoneyPoly board."""
+    """
+    Represents a single purchasable property tile on the MoneyPoly board.
+    
+    # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
+    """
 
     FULL_GROUP_MULTIPLIER = 2
 
@@ -47,10 +55,10 @@ class Property:
         """
         if not self.is_mortgaged:
             return 0
-        else:
-            cost = int(self.mortgage_value * 1.1)
-            self.is_mortgaged = False
-            return cost
+        
+        cost = int(self.mortgage_value * 1.1)
+        self.is_mortgaged = False
+        return cost
 
     def is_available(self):
         """Return True if this property can be purchased (unowned, not mortgaged)."""
@@ -62,6 +70,7 @@ class Property:
 
 
 class PropertyGroup:
+    """Represents a color group of properties on the board."""
     def __init__(self, name, color):
         self.name = name
         self.color = color
