@@ -54,8 +54,13 @@ def test_profile_update_invalid_phone():
     response = requests.put(f"{BASE_URL}/profile", headers=HEADERS_VALID, json=payload)
     assert response.status_code == 400
 
+@pytest.mark.xfail(strict=True, reason="Bug 4: Server returns only {message} on profile update instead of updated user data (deviation from address update pattern)")
 def test_profile_update_valid():
-    """Validates valid profile updates work."""
+    """Validates valid profile updates work.
+    
+    BUG 4: The server returns only {"message": "Profile updated successfully"}
+    instead of the updated user data. The test asserts the expected spec behaviour.
+    """
     payload = {"name": "John Doe", "phone": "1234567890"}
     response = requests.put(f"{BASE_URL}/profile", headers=HEADERS_VALID, json=payload)
     assert response.status_code == 200
@@ -168,8 +173,12 @@ def test_product_not_found():
 
 # --- Cart ---
 
+@pytest.mark.xfail(strict=True, reason="Bug 1: Server accepts quantity=0 and negative quantities, returning 200 instead of 400")
 def test_cart_add_invalid_quantity():
-    """Quantity must be >= 1. Sending 0 or negative = 400."""
+    """Quantity must be >= 1. Sending 0 or negative = 400.
+    
+    BUG 1: Server returns 200 OK when quantity=0 or negative (should be 400).
+    """
     payload = {"product_id": 1, "quantity": 0}
     response = requests.post(f"{BASE_URL}/cart/add", headers=HEADERS_VALID, json=payload)
     assert response.status_code == 400
@@ -219,8 +228,12 @@ def test_loyalty_redeem_invalid():
     assert response.status_code == 400
 
 # --- Reviews ---
+@pytest.mark.xfail(strict=True, reason="Bug 2: Server accepts ratings outside 1-5 range (e.g. 0, 6), returning 200 instead of 400")
 def test_review_invalid_rating():
-    """Review rating must be between 1 and 5. Expected 400."""
+    """Review rating must be between 1 and 5. Expected 400.
+    
+    BUG 2: Server returns 200 OK for ratings of 0 and 6 (should be 400).
+    """
     payload = {"rating": 6, "comment": "Great product!"}
     response = requests.post(f"{BASE_URL}/products/1/reviews", headers=HEADERS_VALID, json=payload)
     assert response.status_code == 400
@@ -269,14 +282,40 @@ def test_checkout_invalid_payment():
     response = requests.post(f"{BASE_URL}/checkout", headers=HEADERS_VALID, json=payload)
     assert response.status_code == 400
 
+@pytest.mark.xfail(strict=True, reason="Bug 3: Server does not enforce COD limit of $5000, allowing large orders via COD")
 def test_checkout_cod_limit():
-    """COD > 5000 returns 400."""
-    # Add large quantity
+    """COD > 5000 must return 400 per spec.
+    
+    BUG 3: Server returns 200 OK when cart total exceeds $5,000 and payment is COD.
+    Strategy: use Admin endpoint to find a product with enough stock for a >$5000 order.
+    """
+    # Use admin endpoint to access full stock_quantity for all products
+    products = requests.get(f"{BASE_URL}/admin/products", headers=HEADERS_ADMIN).json()
+    # Find an active product whose price * qty exceeds 5000
+    target_product_id = None
+    target_qty = None
+    for p in products:
+        price = p.get("price", 0)
+        stock = p.get("stock_quantity", 0)  # API field name is stock_quantity
+        is_active = p.get("is_active", False)
+        if is_active and price > 0 and stock > 0:
+            needed_qty = int(5001 / price) + 1
+            if stock >= needed_qty:
+                target_product_id = p["product_id"]
+                target_qty = needed_qty
+                break
+    
+    if target_product_id is None:
+        pytest.skip("No active product with enough stock to create a >$5000 cart")
+    
     requests.delete(f"{BASE_URL}/cart/clear", headers=HEADERS_VALID)
-    requests.post(f"{BASE_URL}/cart/add", headers=HEADERS_VALID, json={"product_id": 1, "quantity": 100})
+    add_resp = requests.post(f"{BASE_URL}/cart/add", headers=HEADERS_VALID,
+                             json={"product_id": target_product_id, "quantity": target_qty})
+    assert add_resp.status_code == 200, f"Failed to add to cart: {add_resp.text}"
+    
     payload = {"payment_method": "COD"}
     response = requests.post(f"{BASE_URL}/checkout", headers=HEADERS_VALID, json=payload)
-    # Could be 400 for COD limit, or 400 for stock limit
+    # Per spec: COD > $5000 must return 400
     assert response.status_code == 400
 
 # --- Orders ---
